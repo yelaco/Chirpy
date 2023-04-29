@@ -10,6 +10,7 @@ func main() {
 	corsMux := middlewareCors(mux)
 
 	mux.Handle("/", http.FileServer(http.Dir("./")))
+	mux.HandleFunc("/healthz", ReadinessEndpoint)
 
 	server := http.Server{
 		Addr:    "localhost:8080",
