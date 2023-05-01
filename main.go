@@ -5,10 +5,12 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/minhquang053/Chirpy/internal/database"
 )
 
 func main() {
 	apiCfg := &apiConfig{
+		db:             database.NewDB("internal/database/database.json"),
 		fileserverHits: 0,
 	}
 
@@ -18,7 +20,8 @@ func main() {
 	apiRouter := chi.NewRouter()
 	apiRouter.Get("/healthz", handleReadiness)
 	apiRouter.Get("/metrics", apiCfg.handlerMetrics)
-
+	apiRouter.Post("/chirps", apiCfg.handlePostChirp)
+	apiRouter.Get("/chirps", apiCfg.handleGetChirp)
 	// Regiser handlers and its according request methods to the admin router
 	adminRouter := chi.NewRouter()
 	adminRouter.Get("/metrics", apiCfg.adminHandlerMetrics)
