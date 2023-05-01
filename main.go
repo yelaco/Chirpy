@@ -13,25 +13,22 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	corsMux := middlewareCors(r)
+
+	// Register handlers and its according request methods to the api router
+	apiRouter := chi.NewRouter()
+	apiRouter.Get("/healthz", handleReadiness)
+	apiRouter.Get("/metrics", apiCfg.handlerMetrics)
+
+	// Regiser handlers and its according request methods to the admin router
+	adminRouter := chi.NewRouter()
+	adminRouter.Get("/metrics", apiCfg.adminHandlerMetrics)
+
+	// Mount the subrouters -> /api/healthz will be handled by apiRouter with /healthz pattern
 	r.Mount("/", apiCfg.middlewareMetricsInc(http.FileServer(http.Dir("."))))
+	r.Mount("/api", apiRouter)
+	r.Mount("/admin", adminRouter)
 
-	r.Get("/healthz", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	}))
-
-	r.Get("/metrics", apiCfg.handlerMetrics)
-	// mux := http.NewServeMux()
-	// corsMux := middlewareCors(mux)
-	// apiCfg := &apiConfig{0}
-
-	// mux.Handle("/", apiCfg.middlewareMetricsInc(http.FileServer(http.Dir("."))))
-	// mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.WriteHeader(http.StatusOK)
-	// 	w.Write([]byte("OK"))
-	// })
-	// mux.HandleFunc("/metrics", apiCfg.handlerMetrics)
+	corsMux := middlewareCors(r)
 
 	server := http.Server{
 		Addr:    "localhost:8080",

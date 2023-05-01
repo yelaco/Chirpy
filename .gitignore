@@ -1,1 +1,4 @@
 out
+assets/
+thunder-tests/
+.vscode/
