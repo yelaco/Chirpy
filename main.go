@@ -21,7 +21,10 @@ func main() {
 	apiRouter.Get("/healthz", handleReadiness)
 	apiRouter.Get("/metrics", apiCfg.handlerMetrics)
 	apiRouter.Post("/chirps", apiCfg.handlePostChirp)
-	apiRouter.Get("/chirps", apiCfg.handleGetChirp)
+	apiRouter.Get("/chirps", apiCfg.handleGetAllChirps)
+	apiRouter.Get("/chirps/{chirpID}", apiCfg.handleGetChirpById)
+	apiRouter.Post("/users", apiCfg.handlePostUser)
+
 	// Regiser handlers and its according request methods to the admin router
 	adminRouter := chi.NewRouter()
 	adminRouter.Get("/metrics", apiCfg.adminHandlerMetrics)

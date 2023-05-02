@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"errors"
+	"flag"
 	"os"
 	"sync"
 )
@@ -14,56 +15,30 @@ type DB struct {
 
 type DBStructure struct {
 	Chirps map[int]Chirp
+	Users  map[int]User
 }
 
 // NewDB creates a new database connection
 // and creates the database file if it doesn't exist
 func NewDB(path string) *DB {
+	// will delete the database file at the start of the program if in debug mode
+	dbg := flag.Bool("debug", false, "Enable debug mode")
+	flag.Parse()
+	if *dbg {
+		deleteDB(path)
+	}
+
 	return &DB{
 		path: path,
 		mux:  &sync.RWMutex{},
 	}
 }
 
-// CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateChirp(body string) (Chirp, error) {
-	db.mux.Lock()
-	defer db.mux.Unlock()
-
-	dbs, err := db.loadDB()
-	if err != nil {
-		return Chirp{}, err
+func emptyDBS() DBStructure {
+	return DBStructure{
+		map[int]Chirp{},
+		map[int]User{},
 	}
-
-	chirp := Chirp{
-		Id:   len(dbs.Chirps) + 1,
-		Body: body,
-	}
-
-	dbs.Chirps[chirp.Id] = chirp
-	err = db.writeDB(dbs)
-	if err != nil {
-		return Chirp{}, err
-	}
-
-	return chirp, nil
-}
-
-// GetChirps returns all chirps in the database
-func (db *DB) GetChirps() ([]Chirp, error) {
-	db.mux.RLock()
-	defer db.mux.RUnlock()
-
-	dbs, err := db.loadDB()
-	if err != nil {
-		return nil, errors.New("GetChirps: " + err.Error())
-	}
-	chirps := []Chirp{}
-	for _, chirp := range dbs.Chirps {
-		chirps = append(chirps, chirp)
-	}
-
-	return chirps, nil
 }
 
 // ensureDB creates a new database file if it doesn't exist
@@ -71,7 +46,7 @@ func (db *DB) ensureDB() error {
 	if _, err := os.Stat(db.path); os.IsNotExist(err) {
 		f, err := os.Create(db.path)
 		if err != nil {
-			return err
+			return errors.New("ensureDB: " + err.Error())
 		}
 		f.Close()
 	}
@@ -86,19 +61,19 @@ func (db *DB) loadDB() (DBStructure, error) {
 	if err == os.ErrNotExist {
 		e := db.ensureDB()
 		if e != nil {
-			return DBStructure{map[int]Chirp{}}, e
+			return emptyDBS(), errors.New("loadDB: " + err.Error())
 		}
 		return db.loadDB()
 	}
 
 	if len(data) == 0 {
-		return DBStructure{map[int]Chirp{}}, nil
+		return emptyDBS(), nil
 	}
 
-	dbs := DBStructure{map[int]Chirp{}}
+	dbs := emptyDBS()
 	err = json.Unmarshal(data, &dbs)
 	if err != nil {
-		return DBStructure{map[int]Chirp{}}, errors.New("loadDB error: " + err.Error())
+		return emptyDBS(), errors.New("loadDB: " + err.Error())
 	}
 
 	return dbs, nil
@@ -108,8 +83,13 @@ func (db *DB) loadDB() (DBStructure, error) {
 func (db *DB) writeDB(dbStructure DBStructure) error {
 	data, err := json.Marshal(dbStructure)
 	if err != nil {
-		return errors.New("writeDB error : " + err.Error())
+		return errors.New("writeDB: " + err.Error())
 	}
 
 	return os.WriteFile(db.path, data, 0644)
+}
+
+// Delete database json file (for debugging purposes only)
+func deleteDB(path string) error {
+	return os.Remove(path)
 }
