@@ -4,5 +4,5 @@ Chirpy is the backend for a social network similar to Twitter.
 
 <strong>Note:</strong>
 <ul>
-<li>When running in debug mode, the database json file will be deleted automatically (Run ```go build -o out && ./out --debug```)</li>
+<li>When running in debug mode, the database json file will be deleted automatically (Run <code>go build -o out && ./out --debug</code>)</li>
 </ul>
