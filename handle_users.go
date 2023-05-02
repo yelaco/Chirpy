@@ -8,7 +8,8 @@ import (
 
 func (cf *apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email string
+		Password string
+		Email    string
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -21,12 +22,13 @@ func (cf *apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newUser, err := cf.db.CreateUser(params.Email)
+	newUser, err := cf.db.CreateUser(params.Password, params.Email)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create User")
 		log.Println("handlePostUser: " + err.Error())
 		return
 	}
-	respondWithJSON(w, http.StatusCreated, newUser)
+
+	respondWithJSON(w, http.StatusCreated, UserResponse{newUser.Id, newUser.Email})
 }

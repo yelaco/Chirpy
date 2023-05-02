@@ -5,12 +5,13 @@ import (
 )
 
 type User struct {
-	Id    int
-	Email string
+	Id       int
+	Password string
+	Email    string
 }
 
 // CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateUser(email string) (User, error) {
+func (db *DB) CreateUser(password string, email string) (User, error) {
 	db.mux.Lock()
 	defer db.mux.Unlock()
 
@@ -19,9 +20,14 @@ func (db *DB) CreateUser(email string) (User, error) {
 		return User{}, errors.New("CreateUser: " + err.Error())
 	}
 
+	hashedPassword, err := getHashedPassword(password)
+	if err != nil {
+		return User{}, errors.New("CreateUser: " + err.Error())
+	}
 	user := User{
-		Id:    len(dbs.Users) + 1,
-		Email: email,
+		Id:       len(dbs.Users) + 1,
+		Password: hashedPassword,
+		Email:    email,
 	}
 
 	dbs.Users[user.Id] = user
@@ -33,22 +39,23 @@ func (db *DB) CreateUser(email string) (User, error) {
 	return user, nil
 }
 
-// // GetChirps returns all chirps in the database
-// func (db *DB) GetUsers() ([]Chirp, error) {
-// 	db.mux.RLock()
-// 	defer db.mux.RUnlock()
+// GetChirps returns all chirps in the database
+func (db *DB) GetUserByEmail(email string) (User, error) {
+	db.mux.RLock()
+	defer db.mux.RUnlock()
 
-// 	dbs, err := db.loadDB()
-// 	if err != nil {
-// 		return nil, errors.New("GetChirps: " + err.Error())
-// 	}
-// 	chirps := []Chirp{}
-// 	for _, chirp := range dbs.Chirps {
-// 		chirps = append(chirps, chirp)
-// 	}
+	dbs, err := db.loadDB()
+	if err != nil {
+		return User{}, errors.New("GetUserByEmail: " + err.Error())
+	}
 
-// 	return chirps, nil
-// }
+	for _, user := range dbs.Users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return User{}, errors.New("Could not find user")
+}
 
 // func (db *DB) GetChirpById(chirpId string) (Chirp, error) {
 // 	db.mux.RLock()
