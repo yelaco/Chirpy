@@ -34,5 +34,39 @@ func (cf *apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cf *apiConfig) handlePutUser(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Password string
+		Email    string
+	}
 
+	signedToken, err := GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Bad token")
+		log.Println("handlePutUser: " + err.Error())
+		return
+	}
+
+	userId, err := cf.validateJWT(signedToken)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "")
+		log.Println("handlePutUser: " + err.Error())
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	e := decoder.Decode(&params)
+
+	if e != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't decode JSON")
+		log.Println("handlePutUser: " + err.Error())
+		return
+	}
+
+	updatedUser, err := cf.db.UpdateUser(userId, params.Password, params.Email)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not update user")
+	}
+
+	respondWithJSON(w, http.StatusOK, updatedUser)
 }

@@ -2,6 +2,7 @@ package database
 
 import (
 	"errors"
+	"strconv"
 )
 
 type User struct {
@@ -20,7 +21,7 @@ func (db *DB) CreateUser(password string, email string) (User, error) {
 		return User{}, errors.New("CreateUser: " + err.Error())
 	}
 
-	hashedPassword, err := getHashedPassword(password)
+	hashedPassword, err := GetHashedPassword(password)
 	if err != nil {
 		return User{}, errors.New("CreateUser: " + err.Error())
 	}
@@ -57,21 +58,58 @@ func (db *DB) GetUserByEmail(email string) (User, error) {
 	return User{}, errors.New("Could not find user")
 }
 
-// func (db *DB) GetChirpById(chirpId string) (Chirp, error) {
-// 	db.mux.RLock()
-// 	defer db.mux.RUnlock()
+func (db *DB) GetUserById(userId string) (User, error) {
+	db.mux.RLock()
+	defer db.mux.RUnlock()
 
-// 	dbs, err := db.loadDB()
-// 	if err != nil {
-// 		return Chirp{}, errors.New("GetChirpById: " + err.Error())
-// 	}
+	dbs, err := db.loadDB()
+	if err != nil {
+		return User{}, errors.New("GetUserById: " + err.Error())
+	}
 
-// 	id, err := strconv.Atoi(chirpId)
-// 	if err != nil {
-// 		return Chirp{}, errors.New("GetChirpById: " + err.Error())
-// 	}
-// 	if chirp, ok := dbs.Chirps[id]; ok {
-// 		return chirp, nil
-// 	}
-// 	return Chirp{}, errors.New("Not found")
-// }
+	id, err := strconv.Atoi(userId)
+	if err != nil {
+		return User{}, errors.New("GetUserById: " + err.Error())
+	}
+	if user, ok := dbs.Users[id]; ok {
+		return user, nil
+	}
+	return User{}, errors.New("Not found")
+}
+
+func (db *DB) UpdateUser(userId string, password string, email string) (User, error) {
+	db.mux.Lock()
+	defer db.mux.Unlock()
+
+	dbs, err := db.loadDB()
+	if err != nil {
+		return User{}, errors.New("UpdateUser: " + err.Error())
+	}
+
+	hashedPassword, err := GetHashedPassword(password)
+	if err != nil {
+		return User{}, errors.New("UpdateUser: " + err.Error())
+	}
+
+	id, err := strconv.Atoi(userId)
+	if err != nil {
+		return User{}, errors.New("UpdateUser: " + err.Error())
+	}
+
+	if _, ok := dbs.Users[id]; ok {
+		dbs.Users[id] = User{
+			Id:       id,
+			Password: hashedPassword,
+			Email:    email,
+		}
+	} else {
+		return User{}, errors.New("UpdateUser: User not found")
+	}
+
+	err = db.writeDB(dbs)
+	if err != nil {
+		return User{}, errors.New("UpdateUser: " + err.Error())
+	}
+
+	return dbs.Users[id], nil
+}
