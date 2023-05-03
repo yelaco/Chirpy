@@ -3,3 +3,4 @@ assets/
 thunder-tests/
 .vscode/
 internal/database/database.json
+.env

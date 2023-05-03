@@ -32,3 +32,7 @@ func (cf *apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusCreated, UserResponse{newUser.Id, newUser.Email})
 }
+
+func (cf *apiConfig) handlePutUser(w http.ResponseWriter, r *http.Request) {
+
+}

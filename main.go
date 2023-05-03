@@ -3,15 +3,21 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 	"github.com/minhquang053/Chirpy/internal/database"
 )
 
 func main() {
+	// Look for a file name .env in current directory to load environment variables
+	godotenv.Load()
+
 	apiCfg := &apiConfig{
 		db:             database.NewDB("internal/database/database.json"),
 		fileserverHits: 0,
+		jwtSecret:      os.Getenv("JWT_SECRET"),
 	}
 
 	r := chi.NewRouter()
@@ -24,6 +30,7 @@ func main() {
 	apiRouter.Get("/chirps", apiCfg.handleGetAllChirps)
 	apiRouter.Get("/chirps/{chirpID}", apiCfg.handleGetChirpById)
 	apiRouter.Post("/users", apiCfg.handlePostUser)
+	apiRouter.Put("/users", apiCfg.handlePutUser)
 	apiRouter.Post("/login", apiCfg.handleLogin)
 
 	// Regiser handlers and its according request methods to the admin router

@@ -11,6 +11,12 @@ type UserResponse struct {
 	Email string
 }
 
+type LoginResponse struct {
+	Id    int
+	Email string
+	Token string
+}
+
 func respondWithError(w http.ResponseWriter, code int, msg string) {
 	respondWithJSON(w, code, map[string]string{"error": msg})
 }
