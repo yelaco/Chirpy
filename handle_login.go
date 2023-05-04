@@ -8,10 +8,8 @@ import (
 
 func (cf *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Password           string
-		Email              string
-		Expires_In_Seconds int
-		Test_You_Here      string
+		Password string
+		Email    string
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -24,18 +22,16 @@ func (cf *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expireAt := params.Expires_In_Seconds
-
 	if loginResp, valid := cf.validatePassword(params.Password, params.Email); valid {
-		defaultExpiration := 60 * 60 * 24
-		if expireAt == 0 {
-			expireAt = defaultExpiration
-		} else if expireAt > defaultExpiration {
-			expireAt = defaultExpiration
-		}
-		loginResp.Token, err = cf.getSignedToken(expireAt, loginResp.Id)
+		loginResp.Token, err = cf.getAccessToken(loginResp.Id)
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Couldn't provide token")
+			log.Println("handleLogin: " + err.Error())
+			return
+		}
+		loginResp.Refresh_Token, err = cf.getRefreshToken(loginResp.Id)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Couldn't provide refresh token")
 			log.Println("handleLogin: " + err.Error())
 			return
 		}

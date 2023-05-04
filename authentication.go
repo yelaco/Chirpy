@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,18 +27,32 @@ func (cf *apiConfig) validatePassword(password string, email string) (LoginRespo
 	}, true
 }
 
-func (cf *apiConfig) getSignedToken(expireInSecond int, userId int) (string, error) {
+func (cf *apiConfig) getAccessToken(userId int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer:    "chirpy",
+		Issuer:    "chirpy-access",
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(expireInSecond) * time.Second)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(1) * time.Hour)),
 		Subject:   fmt.Sprintf("%d", userId),
 	})
-	signedToken, err := token.SignedString([]byte(cf.jwtSecret))
+	accessToken, err := token.SignedString([]byte(cf.jwtSecret))
 	if err != nil {
 		return "", errors.New("getSignedToken: " + err.Error())
 	}
-	return signedToken, nil
+	return accessToken, nil
+}
+
+func (cf *apiConfig) getRefreshToken(userId int) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    "chirpy-access",
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(60*24) * time.Hour)),
+		Subject:   fmt.Sprintf("%d", userId),
+	})
+	refreshToken, err := token.SignedString([]byte(cf.jwtSecret))
+	if err != nil {
+		return "", errors.New("getSignedToken: " + err.Error())
+	}
+	return refreshToken, nil
 }
 
 func (cf *apiConfig) validateJWT(signedToken string) (string, error) {
@@ -77,4 +92,64 @@ func GetBearerToken(headers http.Header) (string, error) {
 	}
 
 	return splitAuth[1], nil
+}
+
+func (cf *apiConfig) isAccessToken(signedToken string) (bool, error) {
+	token, err := jwt.ParseWithClaims(signedToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(cf.jwtSecret), nil
+	})
+	if err != nil {
+		return false, errors.New("isAccessToken: " + err.Error())
+	}
+
+	issuer, err := token.Claims.GetIssuer()
+	if err != nil {
+		return false, errors.New("isAccessToken: " + err.Error())
+	}
+	if issuer != "chirpy-access" {
+		return false, errors.New("isAccessToken: invalid issuer")
+	}
+	return true, nil
+}
+
+func (cf *apiConfig) isRefreshToken(signedToken string) (bool, error) {
+	token, err := jwt.ParseWithClaims(signedToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(cf.jwtSecret), nil
+	})
+	if err != nil {
+		return false, errors.New("isRefreshToken: " + err.Error())
+	}
+
+	issuer, err := token.Claims.GetIssuer()
+	if err != nil {
+		return false, errors.New("isRefreshToken: " + err.Error())
+	}
+	if issuer != "chirpy-refresh" {
+		return false, errors.New("isRefreshToken: invalid issuer")
+	}
+	return true, nil
+}
+
+func (cf *apiConfig) userIdFromToken(signedToken string) (int, error) {
+	token, err := jwt.ParseWithClaims(signedToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(cf.jwtSecret), nil
+	})
+	if err != nil {
+		return -1, errors.New("userIdFromToken: " + err.Error())
+	}
+
+	userId, err := token.Claims.GetSubject()
+	if err != nil {
+		return -1, errors.New("userIdFromToken: " + err.Error())
+	}
+
+	id, err := strconv.Atoi(userId)
+	if err != nil {
+		return -1, errors.New("userIdFromToken: " + err.Error())
+	}
+	return id, nil
+}
+
+func (cf *apiConfig) revokeYet(signedToken string) (bool, error) {
+	return true, nil
 }

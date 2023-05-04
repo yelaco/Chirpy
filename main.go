@@ -32,6 +32,7 @@ func main() {
 	apiRouter.Post("/users", apiCfg.handlePostUser)
 	apiRouter.Put("/users", apiCfg.handlePutUser)
 	apiRouter.Post("/login", apiCfg.handleLogin)
+	apiRouter.Post("/refresh", apiCfg.handleRefresh)
 
 	// Regiser handlers and its according request methods to the admin router
 	adminRouter := chi.NewRouter()

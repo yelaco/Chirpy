@@ -39,14 +39,21 @@ func (cf *apiConfig) handlePutUser(w http.ResponseWriter, r *http.Request) {
 		Email    string
 	}
 
-	signedToken, err := GetBearerToken(r.Header)
+	accessToken, err := GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Bad token")
 		log.Println("handlePutUser: " + err.Error())
 		return
 	}
 
-	userId, err := cf.validateJWT(signedToken)
+	if valid, err := cf.isAccessToken(accessToken); !valid {
+		respondWithError(w, http.StatusUnauthorized, "Bad token")
+		log.Println("handlePutUser: " + err.Error())
+		return
+	}
+
+	userId, err := cf.validateJWT(accessToken)
+
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "")
 		log.Println("handlePutUser: " + err.Error())

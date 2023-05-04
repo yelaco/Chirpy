@@ -12,9 +12,10 @@ type UserResponse struct {
 }
 
 type LoginResponse struct {
-	Id    int
-	Email string
-	Token string
+	Id            int
+	Email         string
+	Token         string
+	Refresh_Token string
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
