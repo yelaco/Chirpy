@@ -14,6 +14,5 @@ func (cf *apiConfig) handleRevoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, _ := cf.db.GetRefreshToken(token)
-	respondWithJSON(w, http.StatusOK, refreshToken)
+	respondWithSuccess(w, http.StatusOK, "Revoke successfully")
 }

@@ -22,13 +22,27 @@ func replaceBadWords(s string) string {
 }
 
 func (cf *apiConfig) handlePostChirp(w http.ResponseWriter, r *http.Request) {
+	accessToken, err := GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized user")
+		log.Println("handlePostChirp: " + err.Error())
+		return
+	}
+
+	authorId, err := cf.authCreateChirp(accessToken)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized user")
+		log.Println("handlePostChirp: " + err.Error())
+		return
+	}
+
 	type parameters struct {
 		Body string
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode JSON")
@@ -43,7 +57,7 @@ func (cf *apiConfig) handlePostChirp(w http.ResponseWriter, r *http.Request) {
 
 	modifiedBody := replaceBadWords(params.Body)
 
-	newChirp, err := cf.db.CreateChirp(modifiedBody)
+	newChirp, err := cf.db.CreateChirp(modifiedBody, authorId)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create Chirp")
 		log.Println("handlePostChirp: " + err.Error())
@@ -54,8 +68,9 @@ func (cf *apiConfig) handlePostChirp(w http.ResponseWriter, r *http.Request) {
 
 func (cf *apiConfig) handleGetAllChirps(w http.ResponseWriter, r *http.Request) {
 	type response []struct {
-		Id   int
-		Body string
+		Id        int
+		Author_Id int
+		Body      string
 	}
 	chirps, err := cf.db.GetChirps()
 	if err != nil {
@@ -67,9 +82,10 @@ func (cf *apiConfig) handleGetAllChirps(w http.ResponseWriter, r *http.Request) 
 	resp := response{}
 	for _, ch := range chirps {
 		resp = append(resp, struct {
-			Id   int
-			Body string
-		}{ch.Id, ch.Body})
+			Id        int
+			Author_Id int
+			Body      string
+		}{ch.Id, ch.Author_Id, ch.Body})
 	}
 	sort.Slice(resp, func(i, j int) bool {
 		return resp[i].Id < resp[j].Id
@@ -90,4 +106,34 @@ func (cf *apiConfig) handleGetChirpById(w http.ResponseWriter, r *http.Request) 
 		respondWithError(w, http.StatusInternalServerError, "Couldn't fetch chirp")
 	}
 	respondWithJSON(w, http.StatusOK, chirp)
+}
+
+func (cf *apiConfig) handleDeleteChirpById(w http.ResponseWriter, r *http.Request) {
+	accessToken, err := GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized user")
+		log.Println("handlePostChirp: " + err.Error())
+		return
+	}
+
+	chirpId := chi.URLParam(r, "chirpID")
+	chirp, err := cf.db.GetChirpById(chirpId)
+	if err != nil {
+		if err.Error() == "Not found" {
+			respondWithError(w, http.StatusNotFound, "Id not found")
+			return
+		}
+		log.Println("handleDeleteChirpById: " + err.Error())
+		respondWithError(w, http.StatusInternalServerError, "Couldn't fetch chirp")
+	}
+	if valid, err := cf.authDeleteChirp(accessToken, chirp.Author_Id); !valid {
+		log.Println("handleDeleteChirpById: " + err.Error())
+		respondWithError(w, http.StatusForbidden, "Unauthorized user")
+		return
+	}
+	err = cf.db.DeleteChirpById(chirpId)
+	if err != nil {
+		log.Println("handleDeleteChirpById: " + err.Error())
+	}
+	respondWithSuccess(w, http.StatusOK, "Deleted successfully")
 }

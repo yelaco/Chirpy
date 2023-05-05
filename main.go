@@ -34,6 +34,7 @@ func main() {
 	apiRouter.Post("/login", apiCfg.handleLogin)
 	apiRouter.Post("/refresh", apiCfg.handleRefresh)
 	apiRouter.Post("/revoke", apiCfg.handleRevoke)
+	apiRouter.Delete("/chirps/{chirpID}", apiCfg.handleDeleteChirpById)
 
 	// Regiser handlers and its according request methods to the admin router
 	adminRouter := chi.NewRouter()

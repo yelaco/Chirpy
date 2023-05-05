@@ -6,12 +6,20 @@ import (
 )
 
 type Chirp struct {
-	Id   int
-	Body string
+	Id        int
+	Author_Id int
+	Body      string
+}
+
+func getMaxId(chirps map[int]Chirp) int {
+	var maxId int
+	for maxId = range chirps {
+	}
+	return maxId
 }
 
 // CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateChirp(body string) (Chirp, error) {
+func (db *DB) CreateChirp(body string, authorId int) (Chirp, error) {
 	db.mux.Lock()
 	defer db.mux.Unlock()
 
@@ -21,8 +29,9 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 	}
 
 	chirp := Chirp{
-		Id:   len(dbs.Chirps) + 1,
-		Body: body,
+		Id:        getMaxId(dbs.Chirps) + 1,
+		Author_Id: authorId,
+		Body:      body,
 	}
 
 	dbs.Chirps[chirp.Id] = chirp
@@ -68,4 +77,30 @@ func (db *DB) GetChirpById(chirpId string) (Chirp, error) {
 		return chirp, nil
 	}
 	return Chirp{}, errors.New("Not found")
+}
+
+func (db *DB) DeleteChirpById(chirpId string) error {
+	db.mux.Lock()
+	defer db.mux.Unlock()
+
+	dbs, err := db.loadDB()
+	if err != nil {
+		return errors.New("DeleteChirpById: " + err.Error())
+	}
+
+	id, err := strconv.Atoi(chirpId)
+	if err != nil {
+		return errors.New("DeleteChirpById: " + err.Error())
+	}
+	for k, v := range dbs.Chirps {
+		if v.Id == id {
+			delete(dbs.Chirps, k)
+			err = db.writeDB(dbs)
+			if err != nil {
+				return errors.New("DeleteChirpById: " + err.Error())
+			}
+			return nil
+		}
+	}
+	return errors.New("DeleteChirpById: Id not found")
 }
