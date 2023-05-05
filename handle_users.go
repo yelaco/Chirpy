@@ -46,7 +46,7 @@ func (cf *apiConfig) handlePutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if valid, err := cf.isAccessToken(accessToken); !valid {
+	if valid, err := cf.validateAccessToken(accessToken); !valid {
 		respondWithError(w, http.StatusUnauthorized, "Bad token")
 		log.Println("handlePutUser: " + err.Error())
 		return

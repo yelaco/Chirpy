@@ -3,12 +3,22 @@ package database
 import (
 	"errors"
 	"strconv"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
 	Id       int
 	Password string
 	Email    string
+}
+
+func GetHashedPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", errors.New("Failed to hash password")
+	}
+	return string(hashedPassword), nil
 }
 
 func (db *DB) CreateUser(password string, email string) (*User, error) {

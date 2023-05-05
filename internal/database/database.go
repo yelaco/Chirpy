@@ -14,8 +14,9 @@ type DB struct {
 }
 
 type DBStructure struct {
-	Chirps map[int]Chirp
-	Users  map[int]User
+	Chirps        map[int]Chirp
+	Users         map[int]User
+	RefreshTokens map[string]RefreshToken
 }
 
 // NewDB creates a new database connection
@@ -38,6 +39,7 @@ func emptyDBS() DBStructure {
 	return DBStructure{
 		map[int]Chirp{},
 		map[int]User{},
+		map[string]RefreshToken{},
 	}
 }
 

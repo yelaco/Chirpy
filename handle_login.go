@@ -23,15 +23,20 @@ func (cf *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if loginResp, valid := cf.validatePassword(params.Password, params.Email); valid {
-		loginResp.Token, err = cf.getAccessToken(loginResp.Id)
+		loginResp.Token, err = cf.createAccessToken(loginResp.Id)
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Couldn't provide token")
 			log.Println("handleLogin: " + err.Error())
 			return
 		}
-		loginResp.Refresh_Token, err = cf.getRefreshToken(loginResp.Id)
+		loginResp.Refresh_Token, err = cf.createRefreshToken(loginResp.Id)
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Couldn't provide refresh token")
+			log.Println("handleLogin: " + err.Error())
+			return
+		}
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Couldn't add refresh token")
 			log.Println("handleLogin: " + err.Error())
 			return
 		}

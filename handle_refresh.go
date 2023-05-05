@@ -13,7 +13,7 @@ func (cf *apiConfig) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if valid, err := cf.isRefreshToken(refreshToken); !valid {
+	if valid, err := cf.validateRefreshToken(refreshToken); !valid {
 		respondWithError(w, http.StatusUnauthorized, "Bad refresh token")
 		log.Println("handleRefresh: " + err.Error())
 		return
@@ -26,10 +26,13 @@ func (cf *apiConfig) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newRefreshToken, err := cf.getRefreshToken(userId)
+	newAccessToken, err := cf.createAccessToken(userId)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not get refresh token")
 	}
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not add refresh token to database")
+	}
 
-	respondWithJSON(w, http.StatusOK, struct{ Token string }{newRefreshToken})
+	respondWithJSON(w, http.StatusOK, struct{ Token string }{newAccessToken})
 }
