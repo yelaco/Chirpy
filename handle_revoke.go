@@ -14,5 +14,5 @@ func (cf *apiConfig) handleRevoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithSuccess(w, http.StatusOK, "Revoke successfully")
+	respondEmpty(w, http.StatusOK)
 }

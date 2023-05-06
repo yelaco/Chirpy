@@ -135,5 +135,5 @@ func (cf *apiConfig) handleDeleteChirpById(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		log.Println("handleDeleteChirpById: " + err.Error())
 	}
-	respondWithSuccess(w, http.StatusOK, "Deleted successfully")
+	respondEmpty(w, http.StatusOK)
 }

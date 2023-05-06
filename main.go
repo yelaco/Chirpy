@@ -18,6 +18,7 @@ func main() {
 		db:             database.NewDB("internal/database/database.json"),
 		fileserverHits: 0,
 		jwtSecret:      os.Getenv("JWT_SECRET"),
+		polkaKey:       os.Getenv("POLKA_KEY"),
 	}
 
 	r := chi.NewRouter()
@@ -27,14 +28,15 @@ func main() {
 	apiRouter.Get("/healthz", handleReadiness)
 	apiRouter.Get("/metrics", apiCfg.handlerMetrics)
 	apiRouter.Post("/chirps", apiCfg.handlePostChirp)
-	apiRouter.Get("/chirps", apiCfg.handleGetAllChirps)
+	apiRouter.Get("/chirps/{authorID}", apiCfg.handleGetAllChirps)
 	apiRouter.Get("/chirps/{chirpID}", apiCfg.handleGetChirpById)
+	apiRouter.Delete("/chirps/{chirpID}", apiCfg.handleDeleteChirpById)
 	apiRouter.Post("/users", apiCfg.handlePostUser)
 	apiRouter.Put("/users", apiCfg.handlePutUser)
 	apiRouter.Post("/login", apiCfg.handleLogin)
 	apiRouter.Post("/refresh", apiCfg.handleRefresh)
 	apiRouter.Post("/revoke", apiCfg.handleRevoke)
-	apiRouter.Delete("/chirps/{chirpID}", apiCfg.handleDeleteChirpById)
+	apiRouter.Post("/polka/webhooks", apiCfg.handleWebhook)
 
 	// Regiser handlers and its according request methods to the admin router
 	adminRouter := chi.NewRouter()

@@ -22,7 +22,10 @@ func (cf *apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newUser, err := cf.db.CreateUser(params.Password, params.Email)
+	newUser, err := cf.db.CreateUser(
+		GetHashedPassword(params.Password),
+		params.Email,
+	)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create User")
@@ -30,7 +33,11 @@ func (cf *apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, UserResponse{newUser.Id, newUser.Email})
+	respondWithJSON(w, http.StatusCreated, UserResponse{
+		newUser.Id,
+		newUser.Email,
+		newUser.Is_Chirpy_Red,
+	})
 }
 
 func (cf *apiConfig) handlePutUser(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +77,12 @@ func (cf *apiConfig) handlePutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedUser, err := cf.db.UpdateUser(userId, params.Password, params.Email)
+	updatedUser, err := cf.db.UpdateUser(
+		userId,
+		GetHashedPassword(params.Password),
+		params.Email,
+		false,
+	)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not update user")
 	}

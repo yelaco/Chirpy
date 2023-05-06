@@ -2,26 +2,22 @@ package database
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	Id       int
-	Password string
-	Email    string
+	Id            int
+	Password      string
+	Email         string
+	Is_Chirpy_Red bool
 }
 
-func GetHashedPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", errors.New("Failed to hash password")
+func (db *DB) CreateUser(password *string, email string) (*User, error) {
+	if password == nil {
+		return nil, errors.New("Couldn't hash password")
 	}
-	return string(hashedPassword), nil
-}
 
-func (db *DB) CreateUser(password string, email string) (*User, error) {
 	if usr, _ := db.GetUserByEmail(email); usr != nil {
 		return nil, errors.New("CreateUser: User already exists")
 	}
@@ -34,14 +30,11 @@ func (db *DB) CreateUser(password string, email string) (*User, error) {
 		return nil, errors.New("CreateUser: " + err.Error())
 	}
 
-	hashedPassword, err := GetHashedPassword(password)
-	if err != nil {
-		return nil, errors.New("CreateUser: " + err.Error())
-	}
 	user := &User{
-		Id:       len(dbs.Users) + 1,
-		Password: hashedPassword,
-		Email:    email,
+		Id:            len(dbs.Users) + 1,
+		Password:      *password,
+		Email:         email,
+		Is_Chirpy_Red: false,
 	}
 
 	dbs.Users[user.Id] = *user
@@ -89,16 +82,15 @@ func (db *DB) GetUserById(userId string) (*User, error) {
 	return nil, errors.New("Not found")
 }
 
-func (db *DB) UpdateUser(userId string, password string, email string) (*User, error) {
+func (db *DB) UpdateUser(userId string, password *string, email string, isRed bool) (*User, error) {
+	if password == nil {
+		return nil, errors.New("Couldn't hash password")
+	}
+
 	db.mux.Lock()
 	defer db.mux.Unlock()
 
 	dbs, err := db.loadDB()
-	if err != nil {
-		return nil, errors.New("UpdateUser: " + err.Error())
-	}
-
-	hashedPassword, err := GetHashedPassword(password)
 	if err != nil {
 		return nil, errors.New("UpdateUser: " + err.Error())
 	}
@@ -110,9 +102,10 @@ func (db *DB) UpdateUser(userId string, password string, email string) (*User, e
 
 	if _, ok := dbs.Users[id]; ok {
 		dbs.Users[id] = User{
-			Id:       id,
-			Password: hashedPassword,
-			Email:    email,
+			Id:            id,
+			Password:      *password,
+			Email:         email,
+			Is_Chirpy_Red: isRed,
 		}
 	} else {
 		return nil, errors.New("UpdateUser: User not found")
@@ -125,4 +118,17 @@ func (db *DB) UpdateUser(userId string, password string, email string) (*User, e
 
 	user := dbs.Users[id]
 	return &user, nil
+}
+
+func (db *DB) UpgradeUser(id int) error {
+	userId := fmt.Sprintf("%d", id)
+	user, err := db.GetUserById(userId)
+	if user == nil {
+		return errors.New("UpgradeUser: " + err.Error())
+	}
+	_, e := db.UpdateUser(userId, &user.Password, user.Email, true)
+	if e != nil {
+		return errors.New("UpgradeUser: " + e.Error())
+	}
+	return nil
 }

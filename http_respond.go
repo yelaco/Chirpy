@@ -7,13 +7,15 @@ import (
 )
 
 type UserResponse struct {
-	Id    int
-	Email string
+	Id            int
+	Email         string
+	Is_Chirpy_Red bool
 }
 
 type LoginResponse struct {
 	Id            int
 	Email         string
+	Is_Chirpy_Red bool
 	Token         string
 	Refresh_Token string
 }
@@ -22,8 +24,8 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 	respondWithJSON(w, code, map[string]string{"error": msg})
 }
 
-func respondWithSuccess(w http.ResponseWriter, code int, msg string) {
-	respondWithJSON(w, code, map[string]string{"success": msg})
+func respondEmpty(w http.ResponseWriter, code int) {
+	respondWithJSON(w, code, struct{}{})
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {

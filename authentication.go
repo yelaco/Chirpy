@@ -12,6 +12,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func GetHashedPassword(password string) *string {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil
+	}
+	strPassword := string(hashedPassword)
+	return &strPassword
+}
+
 func (cf *apiConfig) validatePassword(password string, email string) (LoginResponse, bool) {
 	login, err := cf.db.GetUserByEmail(email)
 	if err != nil {
@@ -22,8 +31,9 @@ func (cf *apiConfig) validatePassword(password string, email string) (LoginRespo
 		return LoginResponse{}, false
 	}
 	return LoginResponse{
-		Id:    login.Id,
-		Email: login.Email,
+		Id:            login.Id,
+		Email:         login.Email,
+		Is_Chirpy_Red: login.Is_Chirpy_Red,
 	}, true
 }
 
@@ -84,11 +94,24 @@ func (cf *apiConfig) validateJWT(signedToken string) (string, error) {
 func GetBearerToken(headers http.Header) (string, error) {
 	authHeader := headers.Get("Authorization")
 	if authHeader == "" {
-		return "", errors.New("No Authorization header included")
+		return "", errors.New("GetBearerToken: No Authorization header included")
 	}
 	splitAuth := strings.Split(authHeader, " ")
 	if len(splitAuth) < 2 || splitAuth[0] != "Bearer" {
-		return "", errors.New("malformed authorization header")
+		return "", errors.New("GetBearerToken: malformed authorization header")
+	}
+
+	return splitAuth[1], nil
+}
+
+func GetApiKey(headers http.Header) (string, error) {
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", errors.New("GetApiKey: No Authorization header included")
+	}
+	splitAuth := strings.Split(authHeader, " ")
+	if len(splitAuth) < 2 || splitAuth[0] != "ApiKey" {
+		return "", errors.New("GetApiKey: malformed authorization header")
 	}
 
 	return splitAuth[1], nil
