@@ -79,6 +79,31 @@ func (db *DB) GetChirpById(chirpId string) (Chirp, error) {
 	return Chirp{}, errors.New("Not found")
 }
 
+func (db *DB) GetChirpsByAuthorId(authorId string) ([]Chirp, error) {
+	db.mux.RLock()
+	defer db.mux.RUnlock()
+
+	dbs, err := db.loadDB()
+	if err != nil {
+		return nil, errors.New("GetChirp: " + err.Error())
+	}
+
+	id, err := strconv.Atoi(authorId)
+	if err != nil {
+		return nil, errors.New("GetChirpById: " + err.Error())
+	}
+
+	chirps := []Chirp{}
+
+	for _, chirp := range dbs.Chirps {
+		if chirp.Author_Id == id {
+			chirps = append(chirps, chirp)
+		}
+	}
+
+	return chirps, nil
+}
+
 func (db *DB) DeleteChirpById(chirpId string) error {
 	db.mux.Lock()
 	defer db.mux.Unlock()

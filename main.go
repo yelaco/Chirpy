@@ -28,7 +28,7 @@ func main() {
 	apiRouter.Get("/healthz", handleReadiness)
 	apiRouter.Get("/metrics", apiCfg.handlerMetrics)
 	apiRouter.Post("/chirps", apiCfg.handlePostChirp)
-	apiRouter.Get("/chirps/{authorID}", apiCfg.handleGetAllChirps)
+	apiRouter.Get("/chirps", apiCfg.handleGetChirps)
 	apiRouter.Get("/chirps/{chirpID}", apiCfg.handleGetChirpById)
 	apiRouter.Delete("/chirps/{chirpID}", apiCfg.handleDeleteChirpById)
 	apiRouter.Post("/users", apiCfg.handlePostUser)

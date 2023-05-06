@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/minhquang053/Chirpy/internal/database"
 )
 
 func replaceBadWords(s string) string {
@@ -66,17 +67,33 @@ func (cf *apiConfig) handlePostChirp(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, newChirp)
 }
 
-func (cf *apiConfig) handleGetAllChirps(w http.ResponseWriter, r *http.Request) {
+func (cf *apiConfig) handleGetChirps(w http.ResponseWriter, r *http.Request) {
 	type response []struct {
 		Id        int
 		Author_Id int
 		Body      string
 	}
-	chirps, err := cf.db.GetChirps()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't fetch chirps")
-		log.Println("handleGetChirp: " + err.Error())
-		return
+	var chirps []database.Chirp
+
+	authorId := r.URL.Query().Get("author_id")
+	sortOrder := r.URL.Query().Get("sort")
+
+	if len(authorId) == 0 {
+		ch, err := cf.db.GetChirps()
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Couldn't fetch chirps")
+			log.Println("handleGetChirps: " + err.Error())
+			return
+		}
+		chirps = ch
+	} else {
+		ch, err := cf.db.GetChirpsByAuthorId(authorId)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Couldn't fetch chirp")
+			log.Println("handleGetChirps: " + err.Error())
+			return
+		}
+		chirps = ch
 	}
 
 	resp := response{}
@@ -87,9 +104,24 @@ func (cf *apiConfig) handleGetAllChirps(w http.ResponseWriter, r *http.Request) 
 			Body      string
 		}{ch.Id, ch.Author_Id, ch.Body})
 	}
-	sort.Slice(resp, func(i, j int) bool {
-		return resp[i].Id < resp[j].Id
-	})
+
+	sort.Slice(resp, func(sortOrder string) func(int, int) bool {
+		// Return function to sort the slice in order specified
+		switch sortOrder {
+		case "asc":
+			return func(i, j int) bool {
+				return resp[i].Id < resp[j].Id
+			}
+		case "desc":
+			return func(i, j int) bool {
+				return resp[i].Id > resp[j].Id
+			}
+		default:
+			return func(i, j int) bool {
+				return resp[i].Id < resp[j].Id
+			}
+		}
+	}(sortOrder))
 
 	respondWithJSON(w, http.StatusOK, resp)
 }
