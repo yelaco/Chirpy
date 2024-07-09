@@ -6,15 +6,17 @@ import (
 )
 
 type User struct {
-	ID       int    `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"-"`
+	ID          int    `json:"id"`
+	Email       string `json:"email"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
+	Password    string `json:"-"`
 }
 
 func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email       string `json:"email"`
+		Password    string `json:"password"`
+		IsChirpyRed bool   `json:"is_chirpy_red"`
 	}
 	type response struct {
 		User
@@ -36,8 +38,9 @@ func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request)
 
 	respondWithJSON(w, http.StatusCreated, response{
 		User: User{
-			ID:    newUser.ID,
-			Email: newUser.Email,
+			ID:          newUser.ID,
+			Email:       newUser.Email,
+			IsChirpyRed: newUser.IsChirpyRed,
 		},
 	})
 }

@@ -9,8 +9,9 @@ import (
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email            string `json:"email"`
+		Password         string `json:"password"`
+		ExpiresInSeconds int    `json:"expires_in_seconds"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -32,8 +33,35 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defaultExpiration := 60 * 60
+	if params.ExpiresInSeconds == 0 {
+		params.ExpiresInSeconds = defaultExpiration
+	} else if params.ExpiresInSeconds > defaultExpiration {
+		params.ExpiresInSeconds = defaultExpiration
+	}
+
+	accessToken, err := auth.CreateAccessToken(user.ID, params.ExpiresInSeconds, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Coulnd't create access token")
+		return
+	}
+
+	refreshToken, err := auth.CreateRefreshToken()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Coulnd't create refresh token")
+		return
+	}
+
+	if _, err := cfg.DB.CreateTokenInfo(user.ID, refreshToken); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Coulnd't create refresh token")
+		return
+	}
+
 	respondWithJSON(w, http.StatusOK, UserResponse{
-		ID:    user.ID,
-		Email: user.Email,
+		ID:           user.ID,
+		Email:        user.Email,
+		IsChirpyRed:  user.IsChirpyRed,
+		Token:        accessToken,
+		RefreshToken: refreshToken,
 	})
 }

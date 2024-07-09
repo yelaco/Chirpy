@@ -6,12 +6,13 @@ import (
 )
 
 type Chirp struct {
-	ID   int    `json:"id"`
-	Body string `json:"body"`
+	ID       int    `json:"id"`
+	AuthorID int    `json:"author_id"`
+	Body     string `json:"body"`
 }
 
 // CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateChirp(body string) (Chirp, error) {
+func (db *DB) CreateChirp(userID int, body string) (Chirp, error) {
 	dbStructure, err := db.loadDB()
 	if err != nil {
 		return Chirp{}, err
@@ -19,8 +20,9 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 
 	id := len(dbStructure.Chirps) + 1
 	chirp := Chirp{
-		ID:   id,
-		Body: body,
+		ID:       id,
+		AuthorID: userID,
+		Body:     body,
 	}
 	dbStructure.Chirps[id] = chirp
 
@@ -47,11 +49,10 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 	return chirps, nil
 }
 
-// GetChirps returns all chirps in the database
 func (db *DB) GetChirpFromID(id int) (Chirp, error) {
 	dbs, err := db.loadDB()
 	if err != nil {
-		log.Printf("GetChirps(): couldn't load database - %v", err)
+		log.Printf("couldn't load database - %v", err)
 		return Chirp{}, err
 	}
 
@@ -61,4 +62,22 @@ func (db *DB) GetChirpFromID(id int) (Chirp, error) {
 	}
 
 	return chirp, nil
+}
+
+func (db *DB) GetChirpsFromAuthorID(authorID int, order string) ([]Chirp, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		log.Printf("couldn't load database - %v", err)
+		return []Chirp{}, err
+	}
+
+	chirps := []Chirp{}
+
+	for _, chirp := range dbs.Chirps {
+		if chirp.AuthorID == authorID {
+			chirps = append(chirps, chirp)
+		}
+	}
+
+	return chirps, nil
 }

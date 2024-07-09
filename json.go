@@ -7,13 +7,11 @@ import (
 )
 
 type UserResponse struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
-}
-
-type ChirpResponse struct {
-	ID   int    `json:"id"`
-	Body string `json:"body"`
+	ID           int    `json:"id"`
+	Email        string `json:"email"`
+	IsChirpyRed  bool   `json:"is_chirpy_red"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {

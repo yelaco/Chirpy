@@ -12,8 +12,9 @@ type DB struct {
 }
 
 type DBStructure struct {
-	Chirps map[int]Chirp `json:"chirps"`
-	Users  map[int]User  `json:"users"`
+	Chirps     map[int]Chirp        `json:"chirps"`
+	Users      map[int]User         `json:"users"`
+	TokenInfos map[string]TokenInfo `json:"token_infos"`
 }
 
 // NewDB creates a new database connection
@@ -53,8 +54,9 @@ func (db *DB) loadDB() (DBStructure, error) {
 	defer db.mux.RUnlock()
 
 	dbs := DBStructure{
-		Chirps: map[int]Chirp{},
-		Users:  map[int]User{},
+		Chirps:     map[int]Chirp{},
+		Users:      map[int]User{},
+		TokenInfos: map[string]TokenInfo{},
 	}
 
 	file, err := os.ReadFile(db.path)
